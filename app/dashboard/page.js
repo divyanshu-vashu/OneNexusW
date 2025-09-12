@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import withAuth from "../../lib/withAuth";
 import { useDevices } from "../../hooks/useDevices";
+import axios from 'axios';
 
 function DashboardPage() {
   const router = useRouter();
   const [expandedDevice, setExpandedDevice] = useState(null);
-  const { devices, loading, error, fetchDevices, addPort } = useDevices();
+  const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
+  const [newDevice, setNewDevice] = useState({ name: '', macAddress: '' });
+  const [submitError, setSubmitError] = useState('');
+  const { devices, loading, error, fetchDevices, addDevice } = useDevices();
 
   useEffect(() => {
     fetchDevices();
@@ -32,6 +36,20 @@ function DashboardPage() {
     );
   }
 
+  const handleAddDevice = async (e) => {
+    e.preventDefault();
+    setSubmitError('');
+    
+    try {
+      await addDevice(newDevice.macAddress, newDevice.name);
+      setShowAddDeviceModal(false);
+      setNewDevice({ name: '', macAddress: '' });
+   } catch (err) {
+      console.error('Error adding device:', err);
+      setSubmitError(err.response?.data?.message || 'Failed to add device');
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -46,6 +64,20 @@ function DashboardPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">My Devices</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Add Device Card */}
+          <div 
+            className="bg-white rounded-xl shadow-md overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors cursor-pointer flex items-center justify-center min-h-[180px]"
+            onClick={() => setShowAddDeviceModal(true)}
+          >
+            <div className="text-center p-6">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Add New Device</h3>
+              <p className="mt-1 text-sm text-gray-500">Click to register a new device</p>
+            </div>
+          </div>
+          {/* Existing Devices */}
           {devices.map((device) => (
             <div 
               key={device._id} 
@@ -152,6 +184,109 @@ function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Add Device Modal */}
+        {showAddDeviceModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Add New Device</h2>
+                  <button 
+                    onClick={() => {
+                      setShowAddDeviceModal(false);
+                      setNewDevice({ name: '', macAddress: '' });
+                      setSubmitError('');
+                    }}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <form onSubmit={handleAddDevice}>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="deviceName" className="block text-sm font-medium text-gray-700">
+                        Device Name
+                      </label>
+                      <input
+                        type="text"
+                        id="deviceName"
+                        required
+                        value={newDevice.name}
+                        onChange={(e) => setNewDevice({...newDevice, name: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                        placeholder="e.g., Living Room Light"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="macAddress" className="block text-sm font-medium text-gray-700">
+                        MAC Address
+                      </label>
+                      <input
+                        type="text"
+                        id="macAddress"
+                        required
+                        value={newDevice.macAddress}
+                        onChange={(e) => {
+                          // Allow only hex digits and colons, convert to uppercase
+                          const value = e.target.value.toUpperCase();
+                          // Remove any non-hex characters
+                          const cleanValue = value.replace(/[^0-9A-F:]/g, '');
+                          setNewDevice({...newDevice, macAddress: cleanValue});
+                        }}
+                        onBlur={(e) => {
+                          // Format the MAC address with colons on blur
+                          const value = e.target.value.replace(/[^0-9A-F]/g, '');
+                          if (value.length === 12) {
+                            const formatted = value.match(/.{1,2}/g).join(':');
+                            setNewDevice({...newDevice, macAddress: formatted});
+                          }
+                        }}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                        placeholder="00:1A:2B:3C:4D:58"
+                        pattern="^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$"
+                        title="Please enter a valid MAC address (e.g., 00:1A:2B:3C:4D:58)"
+                      />
+                    </div>
+                    
+                    {submitError && (
+                      <div className="text-red-500 text-sm mt-2">
+                        {submitError}
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddDeviceModal(false);
+                          setNewDevice({ name: '', macAddress: '' });
+                          setSubmitError('');
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading || !newDevice.name || !newDevice.macAddress}
+                      >
+                        {loading ? 'Adding...' : 'Add Device'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
