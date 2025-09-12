@@ -40,3 +40,4 @@ repomix-output.xml
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+public/assets/build/cozy_modern_living_room.glb
