@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
@@ -141,7 +141,7 @@ const PaymentSuccessPage = () => {
             <div className="mt-8 border-t border-gray-200 pt-6">
               <h4 className="text-base font-medium text-gray-900">Next Steps</h4>
               <p className="mt-2 text-sm text-gray-600">
-                We've sent a confirmation to your email address with the full order details. You will receive another email once your order has shipped.
+                We&apos;ve sent a confirmation to your email address with the full order details. You will receive another email once your order has shipped.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <Link
@@ -165,4 +165,13 @@ const PaymentSuccessPage = () => {
   );
 };
 
-export default PaymentSuccessPage;
+// Wrapper component to handle search params with Suspense
+function PaymentSuccessContent() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <PaymentSuccessPage />
+    </Suspense>
+  );
+}
+
+export default PaymentSuccessContent;

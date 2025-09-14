@@ -1,6 +1,7 @@
 "use client";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import Link from 'next/link';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
 
@@ -740,10 +741,13 @@ export default function ShopPage() {
         <header className="header">
           <div className="header-container">
             <Link href="/" className="logo">
-              <img 
+              <Image 
                 src="/assets/images/Nlogo.png" 
                 alt="SmartRemote Logo" 
-                style={{ height: '40px' }} 
+                width={120}
+                height={40}
+                style={{ height: '40px', width: 'auto' }} 
+                priority
               />
             </Link>
 

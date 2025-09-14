@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -880,10 +881,13 @@ export default function HomePage() {
       <header className="header">
         <div className="header-container">
           <Link href="/" className="logo">
-            <img 
+            <Image 
               src="/assets/images/Nlogo.png" 
               alt="SmartRemote Logo" 
-              style={{ height: '40px' }} 
+              width={120}
+              height={40}
+              style={{ height: '40px', width: 'auto' }} 
+              priority
             />
           </Link>
 
