@@ -1,6 +1,7 @@
 import Providers from "../components/Providers";
 import "./globals.css";
 import { Inter } from "next/font/google";
+import Script from 'next/script';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,10 +23,10 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         {/* Load Lottie Player globally */}
-        <script
+        <Script
           type="module"
           src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"
-        ></script>
+        ></Script>
       </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
         <Providers>{children}</Providers>
