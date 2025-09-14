@@ -28,7 +28,26 @@ export function useDevices() {
   const clearError = useCallback(() => setError(null), []);
 
   const fetchDevices = useCallback(async () => {
-    // ... (This function is good, no changes needed)
+    try {
+      setLoading(true);
+      clearError();
+      console.log('Fetching devices...');
+      const response = await getDevicesApi();
+      console.log('Devices API response:', response);
+      setDevices(response.data?.data || []);
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch devices';
+      console.error('Error fetching devices:', {
+        error: err,
+        response: err.response,
+        message: errorMessage
+      });
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
   }, [clearError]);
 
   const addDevice = useCallback(async (macAddress, name) => {
