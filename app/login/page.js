@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext } from "../../context/AppContext";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -540,10 +541,13 @@ export default function LoginPage() {
       <header className="header">
         <div className="header-container">
           <Link href="/" className="logo">
-            <img 
+            <Image 
               src="/assets/images/Nlogo.png" 
               alt="SmartRemote Logo" 
-              style={{ height: '40px' }} 
+              width={120}
+              height={40}
+              style={{ height: '40px', width: 'auto' }} 
+              priority
             />
           </Link>
 
@@ -674,7 +678,7 @@ export default function LoginPage() {
           </button>
 
           <div className="register-link">
-            Don't have an account? 
+            Don&apos;t have an account? 
             <Link href="/register"> Create one here</Link>
           </div>
 

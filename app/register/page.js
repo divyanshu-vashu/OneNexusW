@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import apiClient from "../../lib/apiClient";
 
 export default function RegisterPage() {
@@ -438,10 +439,13 @@ export default function RegisterPage() {
       <header className="header">
         <div className="header-container">
           <Link href="/" className="logo">
-            <img 
+            <Image 
               src="/assets/images/Nlogo.png" 
               alt="SmartRemote Logo" 
-              style={{ height: '40px' }} 
+              width={120}
+              height={40}
+              style={{ height: '40px', width: 'auto' }} 
+              priority
             />
           </Link>
 

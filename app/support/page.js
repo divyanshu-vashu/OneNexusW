@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function SupportPage() {
   const [formData, setFormData] = useState({
@@ -467,10 +468,13 @@ export default function SupportPage() {
       <header className="header" style={{ marginBottom: '2rem' }}>
         <div className="header-container">
           <Link href="/" className="logo">
-            <img 
+            <Image 
               src="/assets/images/Nlogo.png" 
               alt="SmartRemote Logo" 
-              style={{ height: '40px' }} 
+              width={120}
+              height={40}
+              style={{ height: '40px', width: 'auto' }} 
+              priority
             />
           </Link>
 

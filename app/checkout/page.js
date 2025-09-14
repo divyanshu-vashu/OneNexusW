@@ -1,9 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Script from 'next/script';
 import Link from 'next/link';
+
+// Wrapper component to handle search params with Suspense
+function CheckoutContent() {
+  const searchParams = useSearchParams();
+  const plan = searchParams.get('plan') || 'basic';
+  const productId = searchParams.get('id');
+  const amount = searchParams.get('amount');
+  const productName = searchParams.get('name');
+  
+  return <CheckoutPage 
+    plan={plan} 
+    productId={productId}
+    amount={amount}
+    productName={productName}
+  />;
+}
 
 // A reusable form input component to reduce boilerplate
 const FormInput = ({ id, name, label, value, onChange, error, ...props }) => (
@@ -26,13 +42,26 @@ const FormInput = ({ id, name, label, value, onChange, error, ...props }) => (
 );
 
 // The main Checkout Page component
-const CheckoutPage = () => {
-  const searchParams = useSearchParams();
+function CheckoutPage({ 
+  plan = 'basic',
+  productId,
+  amount,
+  productName
+}) {
   const router = useRouter();
-
+  
   const [product, setProduct] = useState({ id: '', name: 'Product', amount: '0' });
   const [loading, setLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -43,19 +72,19 @@ const CheckoutPage = () => {
     pincode: '',
   });
 
-  // Effect to load product details from URL parameters on component mount
+  // Effect to load product details from props
   useEffect(() => {
-    const productId = searchParams.get('id');
-    const amount = searchParams.get('amount');
-    const productName = searchParams.get('name');
-
     if (!productId || !amount || !productName) {
       // If essential product info is missing, redirect to the shop page
       router.push('/shop');
     } else {
-      setProduct({ id: productId, name: productName, amount });
+      setProduct({ 
+        id: productId, 
+        name: productName, 
+        amount 
+      });
     }
-  }, [searchParams, router]);
+  }, [productId, amount, productName, router]);
 
   // Handles changes in form inputs and clears validation errors on typing
   const handleChange = (e) => {
@@ -217,4 +246,11 @@ const CheckoutPage = () => {
   );
 };
 
-export default CheckoutPage;
+// Wrap the checkout page with Suspense
+export default function CheckoutPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
