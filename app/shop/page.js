@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 
 // Dynamically import the ModelViewer component with SSR disabled
 const ModelViewer = dynamic(
@@ -17,14 +18,16 @@ const products = [
   {
     id: "smart-switch",
     name: "Smart Switch",
-    price: 899,
+    price: 89900, // in paise
+    displayPrice: 899,
     model: "/assets/model/1final_online.glb",
     shortDesc: "Control your lights and appliances remotely.",
   },
   {
     id: "smart-plug",
     name: "Smart Plug",
-    price: 799,
+    price: 79900, // in paise
+    displayPrice: 799,
     model: "/assets/model/2plug.glb",
     shortDesc: "Automate any device with ease.",
   },
@@ -33,6 +36,94 @@ const products = [
 export default function ShopPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    quantity: 1
+  });
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    
+    const totalAmount = selectedProduct.price * formData.quantity;
+    
+    const options = {
+      key: "rzp_test_YVP3ZDEfL1w9HN", // Replace with your Razorpay key
+      amount: totalAmount,
+      currency: "INR",
+      name: "OneNexus",
+      description: `Order for ${selectedProduct.name}`,
+      image: "/assets/images/Nlogo.png",
+      handler: async function (response) {
+        try {
+          // Send data to Formspree after successful payment
+          const formspreeResponse = await fetch("https://formspree.io/f/xkgrjvza", {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              product: selectedProduct.name,
+              name: formData.name,
+              phone: formData.phone,
+              email: formData.email,
+              address: formData.address,
+              quantity: formData.quantity,
+              amount: totalAmount / 100, // Convert back to rupees
+              payment_id: response.razorpay_payment_id
+            })
+          });
+          
+          if (formspreeResponse.ok) {
+            setPaymentSuccess(true);
+            // Reset form after 3 seconds and close modal
+            setTimeout(() => {
+              setShowPaymentForm(false);
+              setPaymentSuccess(false);
+            }, 3000);
+          } else {
+            alert("Payment succeeded but failed to send order details. Please contact support.");
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert("An error occurred while processing your order. Please contact support.");
+        }
+      },
+      prefill: {
+        name: formData.name,
+        email: formData.email,
+        contact: formData.phone
+      },
+      notes: {
+        address: formData.address
+      },
+      theme: {
+        color: "#2563eb"
+      }
+    };
+
+    try {
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error('Error initializing Razorpay:', error);
+      alert('Error initializing payment. Please try again.');
+    }
+  };
 
   useEffect(() => {
     // Add custom styles to head
@@ -537,102 +628,223 @@ export default function ShopPage() {
   return (
     <div style={{ backgroundColor: '#f9fafb', color: '#1f2937', fontFamily: 'Inter, sans-serif' }}>
       {/* Progress bar */}
-      <div id="scroll-progress"></div>
-
-      {/* Header */}
-      <header className="header">
-        <div className="header-container">
-          <Link href="/" className="logo">
-            <img 
-              src="/assets/images/Nlogo.png" 
-              alt="SmartRemote Logo" 
-              style={{ height: '40px' }} 
-            />
-          </Link>
-
-          <nav className="nav-desktop">
-            <Link href="/#features" className="nav-link">Features</Link>
-            <Link href="/#how-it-works" className="nav-link">How It Works</Link>
-            <Link href="/#specs" className="nav-link">Specifications</Link>
-            <Link href="/support" className="nav-link">Support</Link>
-          </nav>
-
-          <div className="nav-buttons">
-            <Link href="/login" className="header-btn btn-login">Login</Link>
-            <Link href="/register" className="header-btn btn-register">Register</Link>
-            <Link href="/shop" className="header-btn btn-buy">Buy Now</Link>
+      <div className="min-h-screen bg-gray-50">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+        <div id="scroll-progress" />
+        {showPaymentForm && selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">Order Details</h2>
+                  <button 
+                    onClick={() => setShowPaymentForm(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                {paymentSuccess ? (
+                  <div className="p-4 bg-green-100 text-green-800 rounded-md text-center">
+                    ✅ Payment successful and your order has been placed!
+                  </div>
+                ) : (
+                  <form onSubmit={handlePayment} className="space-y-4">
+                    <div>
+                      <label className="block font-medium mb-1">Product Name</label>
+                      <input 
+                        type="text" 
+                        value={selectedProduct.name}
+                        readOnly 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 bg-gray-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Price</label>
+                      <input 
+                        type="text" 
+                        value={`₹${selectedProduct.displayPrice}`}
+                        readOnly 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2 bg-gray-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Quantity</label>
+                      <input 
+                        type="number" 
+                        name="quantity"
+                        min="1" 
+                        value={formData.quantity}
+                        onChange={handleInputChange}
+                        required 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Full Name</label>
+                      <input 
+                        type="text" 
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Email Address</label>
+                      <input 
+                        type="email" 
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Shipping Address</label>
+                      <textarea 
+                        name="address" 
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        required 
+                        className="w-full border border-gray-300 rounded-md px-4 py-2" 
+                        rows="3"
+                      ></textarea>
+                    </div>
+                    <button 
+                      type="submit"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md shadow"
+                    >
+                      Pay ₹{selectedProduct.displayPrice * formData.quantity} & Confirm Order
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
+        )}
+        <header className="header">
+          <div className="header-container">
+            <Link href="/" className="logo">
+              <img 
+                src="/assets/images/Nlogo.png" 
+                alt="SmartRemote Logo" 
+                style={{ height: '40px' }} 
+              />
+            </Link>
 
-          <button 
-            className="mobile-menu-btn"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
-            <div className="mobile-nav-links">
+            <nav className="nav-desktop">
               <Link href="/#features" className="nav-link">Features</Link>
               <Link href="/#how-it-works" className="nav-link">How It Works</Link>
               <Link href="/#specs" className="nav-link">Specifications</Link>
               <Link href="/support" className="nav-link">Support</Link>
-            </div>
-            <div className="mobile-nav-buttons">
+            </nav>
+
+            <div className="nav-buttons">
               <Link href="/login" className="header-btn btn-login">Login</Link>
               <Link href="/register" className="header-btn btn-register">Register</Link>
               <Link href="/shop" className="header-btn btn-buy">Buy Now</Link>
             </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Shop Content */}
-      <div className="shop-container">
-        <div className="shop-content">
-          <div className="shop-header">
-            <div className="shop-badge">
-              🛒 Premium IoT Solutions
+            <button 
+              className="mobile-menu-btn"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
+              <div className="mobile-nav-links">
+                <Link href="/#features" className="nav-link">Features</Link>
+                <Link href="/#how-it-works" className="nav-link">How It Works</Link>
+                <Link href="/#specs" className="nav-link">Specifications</Link>
+                <Link href="/support" className="nav-link">Support</Link>
+              </div>
+              <div className="mobile-nav-buttons">
+                <Link href="/login" className="header-btn btn-login">Login</Link>
+                <Link href="/register" className="header-btn btn-register">Register</Link>
+                <Link href="/shop" className="header-btn btn-buy">Buy Now</Link>
+              </div>
             </div>
-            <h1 className="shop-title">
-              Our Products
-            </h1>
-            <p className="shop-description">
-              Discover our range of smart devices designed to transform your home 
-              and business with cutting-edge IoT technology.
-            </p>
           </div>
+        </header>
 
-          <div className="products-grid">
-            {products.map((product) => (
-              <div key={product.id} className="product-card">
-                <div className="relative w-full h-64 overflow-hidden rounded-lg bg-gray-100">
-                  <ModelViewer 
-                    modelPath={product.model}
-                    className="w-full h-full"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
-                  <p className="text-gray-600 mb-2">{product.shortDesc}</p>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xl font-bold text-gray-900">₹{product.price.toLocaleString()}</span>
-                    <div className="flex space-x-2">
-                      <Link 
-                        href={`/shop/${product.id}`} 
-                        className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
-                      >
-                        View Details
-                      </Link>
-                      <button className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-                        Add to Cart
-                      </button>
+        {/* Shop Content */}
+        <div className="shop-container">
+          <div className="shop-content">
+            <div className="shop-header">
+              <div className="shop-badge">
+                🛒 Premium IoT Solutions
+              </div>
+              <h1 className="shop-title">
+                Our Products
+              </h1>
+              <p className="shop-description">
+                Discover our range of smart devices designed to transform your home 
+                and business with cutting-edge IoT technology.
+              </p>
+            </div>
+
+            <div className="products-grid">
+              {products.map((product) => (
+                <div key={product.id} className="product-card">
+                  <div className="relative w-full h-64 overflow-hidden rounded-lg bg-gray-100">
+                    <ModelViewer 
+                      modelPath={product.model}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                    <p className="text-gray-600 mb-2">{product.shortDesc}</p>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-xl font-bold text-gray-900">₹{product.displayPrice.toLocaleString()}</span>
+                      <div className="flex space-x-2">
+                        <Link 
+                          href={`/shop/${product.id}`} 
+                          className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          View Details
+                        </Link>
+                        <button 
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setShowPaymentForm(true);
+                            setPaymentSuccess(false);
+                            setFormData({
+                              name: '',
+                              phone: '',
+                              email: '',
+                              address: '',
+                              quantity: 1
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                        >
+                          Buy
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
