@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@react-three/drei": "^10.7.5",
     "@react-three/fiber": "^9.3.0",
     "axios": "^1.11.0",
@@ -16,6 +17,7 @@
     "dotenv": "^17.2.2",
     "next": "^15.5.2",
     "next-auth": "^4.24.11",
+    "nodemailer": "^6.10.1",
     "razorpay": "^2.9.6",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",
